@@ -1,4 +1,8 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse
+import json
+import queue
+import threading
 from pydantic import BaseModel
 from ChessEngine import GameState
 import chessAi
@@ -104,6 +108,40 @@ async def websocket_endpoint(websocket: WebSocket, gameId: str):
         for p in players:
             await p.send_json({"type": "opponent_left"})
             await p.send_json({"type": "players", "count": len(players)})
+@app.post("/game/{gameId}/ai-move-stream")
+def ai_move_stream(gameId: str):
+    game = games.get(gameId)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+    validMoves = game.getValidMoves()
+    if len(validMoves) == 0:
+        raise HTTPException(status_code=400, detail="Game is over!")
+    def events():
+        q = queue.Queue()
+        result = {}
+        def run():
+            try:
+                best, info = chessAi.searchStream(game, validMoves, q.put)
+                result["best"] = best
+                result["info"] = info
+            finally:
+                q.put(None)
+        threading.Thread(target=run, daemon=True).start()
+        while True:
+            event = q.get()
+            if event is None:
+                break
+            yield f"data: {json.dumps(event)}\n\n"
+        best = result["best"]
+        game.makeMove(best)
+        done = {"type": "done", "move": best.getChessNotation(),
+                "state": game.TOJSON(), **result["info"]}
+        yield f"data: {json.dumps(done)}\n\n"
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(","),

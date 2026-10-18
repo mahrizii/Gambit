@@ -151,16 +151,25 @@ def findMoveNegaMax(gs, validMoves,depth,alpha,beta,turnMultiplier, stats):
         return turnMultiplier * scoreBoardPosition(gs)
     validMoves.sort(key=moveOrderScore, reverse=True)
     maxScore = -CHECKMATE
-    cabdudates= []
     for move in validMoves:
         stats["nodes"] += 1
         gs.makeMove(move)
+        stats["path"].append(move)
+        now= time.perf_counter()
+        if now - stats["lastLook"] > 0.05:
+            stats["lastLook"] = now
+            stats["emit"]({"type": "look", "line": [m.getChessNotation() for m in stats["path"]], "nodes": stats["nodes"], "pruned": stats["pruned"]})
         score = -findMoveNegaMax(gs, gs.getValidMoves(), depth-1, -beta, -alpha, -turnMultiplier, stats)
         gs.undoMove()
+        stats["path"].pop()
         maxScore = max(maxScore, score)
         alpha = max(alpha, maxScore)
         if alpha >= beta:
             stats["pruned"] += 1
+            now= time.perf_counter()
+            if now - stats["lastPrune"] > 0.03:
+                stats["lastPrune"] = now
+                stats["emit"]({"type": "prune", "line": [m.getChessNotation() for m in stats["path"]] + [move.getChessNotation()], "score": round(score,2)})
             break
     return maxScore
 '''
@@ -215,3 +224,27 @@ def scoreBoardPosition(gs):
                     TotalScore -= pieceScore[squares[1]]
                     TotalScore -= pieceSquareTables[squares[1]][7-r][c]/100
     return TotalScore
+def searchStream(gs, validMoves,emit):
+    stats = {"nodes": 0, "pruned": 0, "path": [], "emit": emit, "lastLook": time.perf_counter(), "lastPrune": time.perf_counter()}
+    
+    bestScore= -CHECKMATE
+    alpha, beta = -CHECKMATE, CHECKMATE
+    random.shuffle(validMoves)
+    validMoves.sort(key=moveOrderScore, reverse=True)
+    bestMove = validMoves[0]
+
+    startTime = time.perf_counter()
+    turnMultiplier = 1 if gs.whiteToMove else -1
+    for move in validMoves:
+        stats["nodes"] += 1
+        gs.makeMove(move)
+        stats["path"].append(move)
+        before = stats["nodes"]
+        score= -findMoveNegaMax(gs,gs.getValidMoves(),DEPTH-1,-beta,-alpha,-turnMultiplier,stats)#goes to the next layer
+        gs.undoMove()
+        stats["path"].pop()
+        emit({"type": "candidate", "move": move.getChessNotation(), "score": round(score, 2), "nodes": stats["nodes"]-before})
+        if score > bestScore:
+            bestScore, bestMove = score, move
+        alpha = max(alpha, score)
+    return bestMove, {"nodes": stats["nodes"], "pruned": stats["pruned"], "ms": round((time.perf_counter() - startTime)*1000)}

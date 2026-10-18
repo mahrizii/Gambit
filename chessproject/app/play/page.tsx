@@ -213,7 +213,7 @@ async function aiMovePlain(id: string) {
               }}
             />
           </BoardFrame>
-
+              
           <aside className="flex flex-col">
             <p className="text-sm text-[#55605A]">You play white</p>
             <h1

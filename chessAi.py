@@ -75,7 +75,7 @@ pieceSquareTables = {
 }
 def findRandomMove(validMoves):
     return random.choice(validMoves)
-
+'''
 def findBestMove(gs, validMoves,nodeCounter=0):
     turnMultiplier = 1 if gs.whiteToMove else -1
     opponentMinMaxScore = CHECKMATE  # Best score opponent can achieve (we want to minimize this)
@@ -115,40 +115,20 @@ def findBestMove(gs, validMoves,nodeCounter=0):
         gs.undoMove()
     nodeCounter=0
     return bestPlayerMove
-
+'''
 '''
 helper method to make the first recursive call'''
 def findBestMoveNegaMax(gs, validMoves):
-    stats = {"nodes": 0, "pruned": 0}
-    nextMove = None
-    bestMove = None
-    bestScore= -CHECKMATE
-    alpha, beta = -CHECKMATE, CHECKMATE
-    random.shuffle(validMoves)
-    validMoves.sort(key=moveOrderScore, reverse=True)
+    best, info = searchStream(gs,validMoves, lambda e: None)
+    print(f"Nodes: {info['nodes']}, Time: {info['ms']}ms")
+    return best
 
 
-    startTime = time.perf_counter()
-    turnMultiplier = 1 if gs.whiteToMove else -1
-    for move in validMoves:
-        stats["nodes"] += 1
-        gs.makeMove(move)
-        nextMoves= gs.getValidMoves()
-        score= -findMoveNegaMax(gs,nextMoves,DEPTH-1,-beta,-alpha,-turnMultiplier,stats)#goes to the next layer
-        gs.undoMove()
-        if score > bestScore:
-            bestScore, bestMove = score, move
-        alpha = max(alpha, score)
-    endTime = time.perf_counter()
-    print(f"Nodes: {stats['nodes']}, Time: {endTime - startTime}")
-    return bestMove
-
-
-    return nextMove
-def findMoveNegaMax(gs, validMoves,depth,alpha,beta,turnMultiplier, stats):
+def findMoveNegaMax(gs,depth,alpha,beta,turnMultiplier, stats):
 
     if depth==0:
         return turnMultiplier * scoreBoardPosition(gs)
+    validMoves= gs.getValidMoves()
     validMoves.sort(key=moveOrderScore, reverse=True)
     maxScore = -CHECKMATE
     for move in validMoves:
@@ -159,7 +139,7 @@ def findMoveNegaMax(gs, validMoves,depth,alpha,beta,turnMultiplier, stats):
         if now - stats["lastLook"] > 0.05:
             stats["lastLook"] = now
             stats["emit"]({"type": "look", "line": [m.getChessNotation() for m in stats["path"]], "nodes": stats["nodes"], "pruned": stats["pruned"]})
-        score = -findMoveNegaMax(gs, gs.getValidMoves(), depth-1, -beta, -alpha, -turnMultiplier, stats)
+        score = -findMoveNegaMax(gs, depth-1, -beta, -alpha, -turnMultiplier, stats)
         gs.undoMove()
         stats["path"].pop()
         maxScore = max(maxScore, score)
@@ -174,6 +154,7 @@ def findMoveNegaMax(gs, validMoves,depth,alpha,beta,turnMultiplier, stats):
     return maxScore
 '''
 Positive score= white winning, negative score = black winning
+'''
 '''
 def scoreBoard(gs):
     if gs.checkMate:
@@ -203,6 +184,7 @@ def scoreMaterial(board):
             elif square[0] == 'b':
                 score -= pieceScore[square[1]]
     return score
+'''
 def moveOrderScore(move):
     if move.pieceCaptured == "--":
         return 0
@@ -224,6 +206,7 @@ def scoreBoardPosition(gs):
                     TotalScore -= pieceScore[squares[1]]
                     TotalScore -= pieceSquareTables[squares[1]][7-r][c]/100
     return TotalScore
+
 def searchStream(gs, validMoves,emit):
     stats = {"nodes": 0, "pruned": 0, "path": [], "emit": emit, "lastLook": time.perf_counter(), "lastPrune": time.perf_counter()}
     
@@ -240,7 +223,7 @@ def searchStream(gs, validMoves,emit):
         gs.makeMove(move)
         stats["path"].append(move)
         before = stats["nodes"]
-        score= -findMoveNegaMax(gs,gs.getValidMoves(),DEPTH-1,-beta,-alpha,-turnMultiplier,stats)#goes to the next layer
+        score= -findMoveNegaMax(gs,DEPTH-1,-beta,-alpha,-turnMultiplier,stats)#goes to the next layer
         gs.undoMove()
         stats["path"].pop()
         emit({"type": "candidate", "move": move.getChessNotation(), "score": round(score, 2), "nodes": stats["nodes"]-before})

@@ -121,6 +121,6 @@ chessproject/    Next.js front end
 
 ## Credits
 
-- The core move generator and the Pygame version started from [TUTORIAL_NAME](TUTORIAL_LINK). On top of it I added move ordering, piece-square evaluation, the API, the web front end, multiplayer, the live search view and the measurements.
+- The core move generator and the Pygame version started from https://www.youtube.com/watch?v=EnYui0e73Rs&list=PLBwF487qi8MGU81nDGaeNE1EnNEPYWKY_. On top of it I added move ordering, piece-square evaluation, the API, the web front end, multiplayer, the live search view and the measurements.
 - Piece-square table values are from Tomasz Michniewski's [Simplified Evaluation Function](https://www.chessprogramming.org/Simplified_Evaluation_Function).
 - The board is drawn with [react-chessboard](https://github.com/Clariity/react-chessboard).

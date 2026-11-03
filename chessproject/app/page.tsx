@@ -46,12 +46,6 @@ function buildFrames(): Position[] {
 const FRAMES = buildFrames();
 const LAST = FRAMES.length - 1;
 
-const specs: [string, string][] = [
-  ["Search", "Negamax with alpha-beta pruning, three half-moves deep."],
-  ["Move ordering", "Captures are searched first, biggest prize first, so more branches get pruned."],
-  ["Evaluation", "Material plus piece-square tables, so pieces head for good squares."],
-  ["Stack", "Python engine, FastAPI server, Next.js front end, WebSockets for live games."],
-];
 
 function HeroBoard() {
   const [frame, setFrame] = useState(0);
@@ -158,15 +152,6 @@ export default function Home() {
             </figcaption>
           </figure>
         </section>
-
-        <dl className="grid gap-x-10 gap-y-6 border-t border-[#1C2320]/15 py-10 sm:grid-cols-2 lg:grid-cols-4">
-          {specs.map(([term, desc]) => (
-            <div key={term}>
-              <dt className="text-sm font-semibold">{term}</dt>
-              <dd className="mt-1 text-sm leading-relaxed text-[#55605A]">{desc}</dd>
-            </div>
-          ))}
-        </dl>
       </div>
     </main>
   );

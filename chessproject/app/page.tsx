@@ -147,9 +147,6 @@ export default function Home() {
 
           <figure className="w-full">
             <HeroBoard />
-            <figcaption className="mt-4 text-sm text-[#55605A]">
-              The Fried Liver Attack, on a loop.
-            </figcaption>
           </figure>
         </section>
       </div>
